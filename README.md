@@ -8,6 +8,8 @@ includes 2 libraries:          1. ntp  https://github.com/sunnysucd/NTPClient
 
 概要：使用时间服务器对时，中途断网也可走时，约每1小时对时1次，增加了心知天气，可以了解今日天气（天气状况，当前温度，最低、高温度以及湿度）和未来3天的天气，并按光敏电阻传感器自动调节亮度，根据时间自动切换显示白天和晚上的天气状况。
 
+https://www.ixigua.com/6898228517885084160?logTag=t2Sfp9yoIszi9MuPFxElF
+
 硬件要求：ESP8266 MAX7219(8*32或8*48）可自行添加温湿度传感器以及物理按钮等
 
 接口：
@@ -15,3 +17,4 @@ includes 2 libraries:          1. ntp  https://github.com/sunnysucd/NTPClient
 DIN  D7
 CS   D8
 CLK  D5
+
