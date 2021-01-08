@@ -1,7 +1,7 @@
-﻿/**********************************************************************
+/**********************************************************************
     本程序为网络时钟，通过互联网获取当地时间和天气预报
     自行填写WIFI名称、密码及心知天气私钥 
-    Powered by Sunny   Email:bizman2000@foxmail.com
+    程序设计：Sunnysucd Email:bizman2000@foxmail.com
 ***********************************************************************/
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
@@ -35,14 +35,8 @@ int h,m,s;
 int Lval=0;
 long localEpoc = 0;
 long localMillisAtUpdate = 0;
-int err = 0;
 String today_day,today;
-// =======================================================================
-
-const char* ssid     = "";       // 连接WiFi名,仅支持2.4G
-                                            // 请将您需要连接的WiFi名填入引号中
-const char* password = "";       // 连接WiFi密码
-                                            // 请将您需要连接的WiFi密码填入引号中
+int err=0;
 
 // 心知天气API请求所需信息
 // 信息反馈语言为英文，根据显示模块可自行更改为中文
@@ -57,20 +51,24 @@ const PROGMEM char *ntpServer = "ntp3.aliyun.com"; //ntp2.aliyun.com,ntp3.aliyun
 NTPClient timeClient(ntpUDP, ntpServer, 3600*8, 60000); //此处可更换时区
 Forecast forecast; // 建立Forecast对象用于获取心知天气信息
 WeatherNow weatherNow; // 建立WeatherNow对象用于获取心知天气信息
-
 void setup(){
   Serial.begin(115200);
   initMAX7219();
   sendCmdAll(CMD_SHUTDOWN,1);
   sendCmdAll(CMD_INTENSITY,10);          
   Serial.println("");
-  connectWiFi();    // 连接wifi
-  printStringWithShift("  Setting Time",20);
+//连接WIFI
+ delay(100);
+  if (!AutoConfig())
+  {
+      SmartConfig();
+  }
+//
+  printStringWithShift("  Setting Time",15);
   
 // 开启NTP时间服务器请求信息
   timeClient.begin();
-
-  // 配置心知天气请求信息
+// 配置心知天气请求信息
   forecast.config(reqUserKey, reqLocation, reqUnit);
   weatherNow.config(reqUserKey, reqLocation, reqUnit);
 }
@@ -85,12 +83,16 @@ void loop(){
     Serial.println("Data loaded");
     clkTime = millis();
   }
-    
+
     if(millis()-clkTime > 60000 && !del && dots) { // clock for 30s, then scrolls for about 30s
-    if(err == 0){ if(h > 4 and h < 19){today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getDayText(0)+" ("+weatherNow.getDegree()+")"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%";}else{today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getNightText(0)+" ("+weatherNow.getDegree()+")"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%";} 
-    }
-    if(err == 1){ if(h > 4 and h < 19){today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getDayText(0)+" ["+weatherNow.getDegree()+"]"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%";}else{today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getNightText(0)+" ["+weatherNow.getDegree()+"]"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%";} 
-    }
+    if(err == 0){
+    if(h > 4 && h < 19){ 
+    today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getDayText(0)+" ("+weatherNow.getDegree()+")"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%";
+    } else { today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getNightText(0)+" ("+weatherNow.getDegree()+")"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%"; }}
+    if(err == 1){
+    if(h > 4 && h < 19){ 
+    today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getDayText(0)+" ["+weatherNow.getDegree()+"]"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%";
+    } else { today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+forecast.getNightText(0)+" ["+weatherNow.getDegree()+"]"+"  T:"+forecast.getLow(0)+"/"+forecast.getHigh(0)+"  H:"+forecast.getHumidity(0)+"%"; }}
     printStringWithShift(today.c_str(),40);
     delay(2000);
     updCnt--;
@@ -103,26 +105,6 @@ void loop(){
   LightControl();
   updateTime();
   showAnimClock();
-}
-
-// 连接WiFi
-void connectWiFi(){
-  WiFi.begin(ssid, password);                  // 启动网络连接
-  printStringWithShift("Connecting to Wifi ",15);              //等待网络连接
-   Serial.println(" Connecting to");Serial.print(ssid); Serial.println(" ...");  // 告知用户NodeMCU正在尝试WiFi连接
-  
-  int i = 0;                                   // 这一段程序语句用于检查WiFi是否连接成功
-  while (WiFi.status() != WL_CONNECTED) {      // WiFi.status()函数的返回值是由NodeMCU的WiFi连接状态所决定的。 
-    delay(1000);                               // 如果WiFi连接成功则返回值为WL_CONNECTED                       
-    Serial.print(i++); Serial.print(' ');      // 此处通过While循环让NodeMCU每隔一秒钟检查一次WiFi.status()函数返回值
-  }                                            // 同时NodeMCU将通过串口监视器输出连接时长读秒。
-                                               // 这个读秒是通过变量i每隔一秒自加1来实现的。                                              
-  Serial.println("");                          // WiFi连接成功后
-  Serial.println("Connection established!");   // NodeMCU将通过串口监视器输出"连接成功"信息。
-  printStringWithShift("  Connection established!",15);     //已经建立网络连接
-  Serial.print("IP address:    ");             // 同时还将输出NodeMCU的IP地址。这一功能是通过调用
-  Serial.println(WiFi.localIP());              // WiFi.localIP()函数来实现的。该函数的返回值即NodeMCU的IP地址。  
-  printStringWithShift((String("  MyIP: ")+WiFi.localIP().toString()).c_str(), 15);     //显示我的IP地址
 }
 
 void getWeather(){
@@ -167,8 +149,8 @@ void getWeather(){
     Serial.println(F("=====================")); 
     err = 0;  
   } else {    // 更新失败
-    Serial.println("Update Fail...");   
-    err = 1;
+    Serial.println("Update Fail..."); 
+    err = 1;  
     Serial.print("Server Response: ");          // 输出服务器响应状态码供用户查找问题
     Serial.println(weatherNow.getServerCode()); // 心知天气服务器错误代码说明可通过以下网址获取
   }                                             // https://docs.seniverse.com/api/start/error.html
@@ -186,11 +168,11 @@ void getWeather(){
     Serial.println(weatherNow.getDegree());     // 获取当前温度数值
     Serial.print(F("Last Update: "));
     Serial.println(weatherNow.getLastUpdate()); // 获取服务器更新天气信息时间
-    Serial.println(F("========================"));    
-    err = 0;  
+    Serial.println(F("========================")); 
+    err = 0;     
   } else {    // 更新失败
-    Serial.println("Update Fail...");  
-    err = 1;  
+    Serial.println("Update Fail..."); 
+    err = 1 ;  
     Serial.print("Server Response: ");          // 输出服务器响应状态码供用户查找问题
     Serial.println(weatherNow.getServerCode()); // 心知天气服务器错误代码说明可通过以下网址获取
   }                                             // https://docs.seniverse.com/api/start/error.html
@@ -221,7 +203,7 @@ void getTime(){
      Serial.print(timeClient.getSeconds());
      localMillisAtUpdate = millis();
      localEpoc = (h * 60 * 60 + m * 60 + s);
-     delay(400);
+     delay(300);
 }
 
 void showAnimClock()
@@ -382,8 +364,58 @@ void updateTime()
   m = (epoch % 3600) / 60;
   s = epoch % 60;
 }
-
+//亮度自动控制
 void LightControl()
-{  Lval =10- map(analogRead(A0),0,1023,0,10);  
+{  Lval =10 - map(analogRead(A0),0,1023,0,10);  
    sendCmdAll(CMD_INTENSITY,Lval);
+}
+
+//一键配网
+void SmartConfig()
+{
+  WiFi.mode(WIFI_STA);
+  Serial.println("\r\nWait for Smartconfig...");
+  printStringWithShift("Waiting For Smartconfig... ",15);   
+  WiFi.beginSmartConfig();
+  while (1)
+  {
+    Serial.print(".");
+    delay(500);                   // wait for a second
+    if (WiFi.smartConfigDone())
+    {
+      Serial.println("SmartConfig Success");
+      printStringWithShift("SmartConfig Success!",15); 
+      Serial.printf("SSID:%s\r\n", WiFi.SSID().c_str());
+      Serial.printf("PSW:%s\r\n", WiFi.psk().c_str());
+      break;
+    }
+  }
+}
+
+bool AutoConfig()
+{
+    WiFi.begin();
+    for (int i = 0; i < 20; i++)
+    {
+        int wstatus = WiFi.status();
+        if (wstatus == WL_CONNECTED)
+        {
+            Serial.println("WIFI SmartConfig Success");
+            Serial.printf("SSID:%s", WiFi.SSID().c_str());
+            Serial.printf(", PSW:%s\r\n", WiFi.psk().c_str());
+            Serial.print("LocalIP:");
+            Serial.print(WiFi.localIP());
+            Serial.print(" ,GateIP:");
+            Serial.println(WiFi.gatewayIP());
+            return true;
+        }
+        else
+        {
+            Serial.print("WIFI AutoConfig Waiting......");
+            Serial.println(wstatus);
+            delay(1000);
+        }
+    }
+    Serial.println("WIFI AutoConfig Faild!" );
+    return false;
 }
