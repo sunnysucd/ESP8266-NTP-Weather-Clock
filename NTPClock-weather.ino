@@ -395,12 +395,14 @@ void SmartConfig()
 bool AutoConfig()
 {
     WiFi.begin();
+    printStringWithShift("Connecting to Wifi ",15);              //等待网络连接
     for (int i = 0; i < 20; i++)
     {
         int wstatus = WiFi.status();
         if (wstatus == WL_CONNECTED)
         {
-            Serial.println("WIFI SmartConfig Success");
+            Serial.println("Connection established!");   // NodeMCU将通过串口监视器输出"连接成功"信息。
+            printStringWithShift("  Connection established!",15);     //已经建立网络连接
             Serial.printf("SSID:%s", WiFi.SSID().c_str());
             Serial.printf(", PSW:%s\r\n", WiFi.psk().c_str());
             Serial.print("LocalIP:");
