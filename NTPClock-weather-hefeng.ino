@@ -1,4 +1,4 @@
-﻿/**********************************************************************
+/**********************************************************************
     本程序为网络时钟，通过互联网获取当地时间和天气预报
     自行填写WIFI名称、密码及和风天气私钥 
     程序设计：Sunnysucd Email:bizman2000@foxmail.com
@@ -35,7 +35,7 @@ int Lval=0;
 long localEpoc = 0;
 long localMillisAtUpdate = 0;
 String today_day,today;
-String UserKey = "XXXXXXXXXX";   // 私钥 https://dev.heweather.com/docs/start/get-api-key
+String UserKey = "XXXXXXX";   // 私钥 https://dev.heweather.com/docs/start/get-api-key
 String Location = "102270101"; // 城市代码 https://github.com/heweather/LocationList,表中的 Location_ID
 String Unit = "m";             // 公制-m/英制-i
 String Lang = "en";            // 语言 英文-en/中文-zh
@@ -84,7 +84,7 @@ void loop(){
   }
 
     if(millis()-clkTime > 60000 && !del && dots) { // clock for 50s, then scrolls for about 50s
-    if (err == 1){ for (int j = 0; j < 3; j++){getWeather();if (err == 0){ return; }}}
+    if (err == 1){ for (int j = 0; j < 3; j++){getWeather();if (err == 0){ break; }}}
     if (err == 0){today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+WeatherNow.getWeatherText()+" ("+WeatherNow.getTemp()+")"+"  T:"+WeatherForecast.getTempMin(0)+"/"+WeatherForecast.getTempMax(0)+"  H:"+int(WeatherNow.getHumidity())+"%"+"  AQI:"+AirQuality.getAqi()+"  "+AirQuality.getCategory()+" ";}
     else{today ="  " +timeClient.getFormattedDate() +"  " + today_day +"  "+"  No Weather Data!";}
     printStringWithShift(today.c_str(),40);
@@ -104,40 +104,38 @@ void loop(){
 
 void getWeather(){
       if(WeatherForecast.get()){ // 获取天气更新
-    for (int i = 0; i < 3; i++) {
+ 
       Serial.print(F("==========Day "));
-      Serial.print(i);
+      Serial.print(0);
       Serial.println(F("=========="));
       Serial.print("Server Response: ");
       Serial.println(WeatherForecast.getServerCode());    // 获取API状态码
       Serial.print(F("Last Update: "));
       Serial.println(WeatherForecast.getLastUpdate());    // 获取服务器更新天气信息时间
       Serial.print(F("TempMax: "));
-      Serial.println(WeatherForecast.getTempMax(i));      // 获取最高温度
+      Serial.println(WeatherForecast.getTempMax(0));      // 获取最高温度
       Serial.print(F("TempMin: "));
-      Serial.println(WeatherForecast.getTempMin(i));      // 获取最低温度
+      Serial.println(WeatherForecast.getTempMin(0));      // 获取最低温度
       Serial.print(F("Icon: "));
-      Serial.println(WeatherForecast.getIconDay(i));      // 获取天气图标代码
+      Serial.println(WeatherForecast.getIconDay(0));      // 获取天气图标代码
       Serial.print(F("Weather Direction: "));
-      Serial.println(WeatherForecast.getTextDay(i));      // 获取天气状况的文字描述
+      Serial.println(WeatherForecast.getTextDay(0));      // 获取天气状况的文字描述
       Serial.print(F("WindDir: "));
-      Serial.println(WeatherForecast.getWindDirDay(i));   // 获取风向
+      Serial.println(WeatherForecast.getWindDirDay(0));   // 获取风向
       Serial.print(F("WindScale: "));
-      Serial.println(WeatherForecast.getwindScaleDay(i)); // 获取风力等级
+      Serial.println(WeatherForecast.getwindScaleDay(0)); // 获取风力等级
       Serial.print(F("Humidity: "));
-      Serial.println(WeatherForecast.getHumidity(i));     // 获取相对湿度百分比数值
+      Serial.println(WeatherForecast.getHumidity(0));     // 获取相对湿度百分比数值
       Serial.print(F("Precip: "));
-      Serial.println(WeatherForecast.getPrecip(i));       // 获取降水量,毫米
+      Serial.println(WeatherForecast.getPrecip(0));       // 获取降水量,毫米
       Serial.print(F("UvIndex: "));
-      Serial.println(WeatherForecast.getUvIndex(i));      // 获取紫外线强度指数
+      Serial.println(WeatherForecast.getUvIndex(0));      // 获取紫外线强度指数
       Serial.println(F("========================="));
-      err = 0 ;
-    }
+    
   } else {    // 更新失败
     Serial.println("Update Failed...");
     Serial.print("Server Response: ");
     Serial.println(WeatherForecast.getServerCode()); // 参考 https://dev.heweather.com/docs/start/status-code
-    err = 1 ;
   }
 
   if(AirQuality.get()){ // 获取更新
@@ -153,12 +151,10 @@ void getWeather(){
     Serial.print(F("Primary: "));
     Serial.println(AirQuality.getPrimary());    // 实时空气质量的主要污染物，优时返回值为 NA
     Serial.println(F("========================"));
-    err = 0 ;
   } else {  // 更新失败
     Serial.println("Update Failed...");
     Serial.print("Server Response: ");
     Serial.println(AirQuality.getServerCode()); // 参考 https://dev.heweather.com/docs/start/status-code
-    err = 1 ;
   }
 
   if(WeatherNow.get()){ // 获取天气更新
@@ -184,13 +180,12 @@ void getWeather(){
     Serial.print(F("Precip: "));
     Serial.println(WeatherNow.getPrecip());      // 获取实况降水量,毫米
     Serial.println(F("========================"));
-    err = 0 ;
   } else {    // 更新失败
     Serial.println("Update Failed...");
     Serial.print("Server Response: ");
     Serial.println(WeatherNow.getServerCode()); // 参考 https://dev.heweather.com/docs/start/status-code
-    err = 1 ;
   }
+  if(WeatherForecast.getServerCode()=="200"&&AirQuality.getServerCode()=="200"&&WeatherNow.getServerCode()=="200"){err=0;}else{err=1;}
 }
 
 void getTime(){
